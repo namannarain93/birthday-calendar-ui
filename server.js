@@ -93,7 +93,7 @@ const server = http.createServer(async (req, res) => {
     const events = await fetchJSON({
       hostname: "www.googleapis.com",
       path:
-        "/calendar/v3/calendars/contacts/events?eventTypes=birthday&singleEvents=true",
+        "/calendar/v3/calendars/primary/events?eventTypes=birthday&singleEvents=true",
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
