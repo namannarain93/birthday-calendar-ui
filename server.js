@@ -130,7 +130,7 @@ if (parsedUrl.pathname === "/style.css") {
     if (!seen.has(key)) {
       seen.add(key);
       birthdays.push({
-        name: e.summary.replace("’s birthday", ""),
+        name: e.summary.replace(/'s birthday|’s birthday| birthday/i, "").trim(),
         month: m,
         day: d,
       });
@@ -189,7 +189,7 @@ function renderLovableLayout(birthdays) {
             <div>
               <div class="font-medium">${escapeHtml(b.name)}</div>
               <div class="text-sm text-muted-foreground">
-                ${b.day}-${b.month}
+                ${formatPrettyDate(b.day, b.month)}
               </div>
             </div>
             <div>🎉</div>
@@ -208,7 +208,14 @@ function escapeHtml(str) {
     "'": "&#39;",
   }[m]));
 }
- 
+ function formatPrettyDate(day, month) {
+  const date = new Date(2000, month - 1, day); // year doesn't matter
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+  });
+}
+
   res.writeHead(404);
   res.end("Not found");
 });
