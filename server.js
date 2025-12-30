@@ -1,36 +1,53 @@
 const http = require("http");
 const url = require("url");
 const querystring = require("querystring");
+const https = require("https");
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const APP_URL = process.env.APP_URL;
 
-const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url);
+let accessToken = null;
 
-  // Home page
+function fetchJSON(options, postData) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, res => {
+      let data = "";
+      res.on("data", chunk => (data += chunk));
+      res.on("end", () => resolve(JSON.parse(data)));
+    });
+    req.on("error", reject);
+    if (postData) req.write(postData);
+    req.end();
+  });
+}
+
+const server = http.createServer(async (req, res) => {
+  const parsedUrl = url.parse(req.url, true);
+
+  // HOME
   if (parsedUrl.pathname === "/") {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(`
       <h1>🎂 Birthday App</h1>
-      <p>This will show birthdays from Google Calendar.</p>
 
-      <a href="/login">
-        <button style="padding:10px;font-size:16px;">
-          Sign in with Google
-        </button>
-      </a>
+      ${
+        accessToken
+          ? `<a href="/birthdays">View birthdays</a>`
+          : `<a href="/login"><button>Sign in with Google</button></a>`
+      }
     `);
     return;
   }
 
-  // Redirect to Google
+  // LOGIN
   if (parsedUrl.pathname === "/login") {
     const params = querystring.stringify({
       client_id: CLIENT_ID,
       redirect_uri: `${APP_URL}/auth/google/callback`,
       response_type: "code",
-      scope: "openid email profile https://www.googleapis.com/auth/calendar.readonly",
+      scope:
+        "openid email profile https://www.googleapis.com/auth/calendar.readonly",
       access_type: "offline",
       prompt: "consent",
     });
@@ -42,12 +59,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Google sends user back here
+  // CALLBACK
   if (parsedUrl.pathname === "/auth/google/callback") {
+    const code = parsedUrl.query.code;
+
+    const tokenData = await fetchJSON(
+      {
+        method: "POST",
+        hostname: "oauth2.googleapis.com",
+        path: "/token",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      },
+      querystring.stringify({
+        code,
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        redirect_uri: `${APP_URL}/auth/google/callback`,
+        grant_type: "authorization_code",
+      })
+    );
+
+    accessToken = tokenData.access_token;
+
+    res.writeHead(302, { Location: "/" });
+    res.end();
+    return;
+  }
+
+  // BIRTHDAYS
+  if (parsedUrl.pathname === "/birthdays") {
+    const events = await fetchJSON({
+      hostname: "www.googleapis.com",
+      path:
+        "/calendar/v3/calendars/contacts/events?eventTypes=birthday&singleEvents=true",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const list = (events.items || [])
+      .map(e => `<li>${e.summary} — ${e.start.date}</li>`)
+      .join("");
+
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(`
-      <h2>✅ Logged in successfully!</h2>
-      <p>Next step: read birthdays from Google Calendar 🎂</p>
+      <h2>🎉 Birthdays</h2>
+      <ul>${list}</ul>
+      <a href="/">Back</a>
     `);
     return;
   }
@@ -56,7 +116,4 @@ const server = http.createServer((req, res) => {
   res.end("Not found");
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log("Server running on port", PORT);
-});
+server.listen(process.env.PORT || 3000);
