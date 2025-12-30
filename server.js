@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
       client_id: CLIENT_ID,
       redirect_uri: `${APP_URL}/auth/google/callback`,
       response_type: "code",
-      scope: "openid email profile",
+      scope: "openid email profile https://www.googleapis.com/auth/calendar.readonly",
       access_type: "offline",
       prompt: "consent",
     });
