@@ -138,13 +138,66 @@ const server = http.createServer(async (req, res) => {
     .join("");
 
   res.writeHead(200, { "Content-Type": "text/html" });
-  res.end(`
-    <h2>🎉 Birthdays</h2>
-    <ul>${list}</ul>
-    <a href="/">Back</a>
-  `);
-  return;
+    res.end(`
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Birthdays</title>
+
+    <!-- Lovable CSS -->
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+
+  <body class="bg-background text-foreground">
+    ${renderLovableLayout(birthdays)}
+  </body>
+</html>
+`);
+return;
 }
+function renderLovableLayout(birthdays) {
+  return `
+    <div class="min-h-screen bg-background">
+      <header class="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
+        <div class="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+          <div class="rounded-xl bg-primary/10 p-2">🎂</div>
+          <div>
+            <h1 class="text-lg font-semibold">Birthdays</h1>
+            <p class="text-sm text-muted-foreground">
+              ${birthdays.length} total
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <main class="max-w-2xl mx-auto px-4 py-6 space-y-3">
+        ${birthdays.map(b => `
+          <div class="rounded-xl bg-card p-4 shadow-sm flex justify-between items-center">
+            <div>
+              <div class="font-medium">${escapeHtml(b.name)}</div>
+              <div class="text-sm text-muted-foreground">
+                ${b.prettyDate}
+              </div>
+            </div>
+            <div>🎉</div>
+          </div>
+        `).join("")}
+      </main>
+    </div>
+  `;
+}
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, m => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[m]));
+}
+ 
   res.writeHead(404);
   res.end("Not found");
 });
