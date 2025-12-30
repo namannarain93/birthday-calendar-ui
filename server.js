@@ -90,28 +90,61 @@ const server = http.createServer(async (req, res) => {
 
   // BIRTHDAYS
   if (parsedUrl.pathname === "/birthdays") {
-    const events = await fetchJSON({
-      hostname: "www.googleapis.com",
-      path:
-        "/calendar/v3/calendars/primary/events?eventTypes=birthday&singleEvents=true",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+  const now = new Date();
+  const year = now.getFullYear();
 
-    const list = (events.items || [])
-      .map(e => `<li>${e.summary} — ${e.start.date}</li>`)
-      .join("");
+  const events = await fetchJSON({
+    hostname: "www.googleapis.com",
+    path:
+      `/calendar/v3/calendars/primary/events` +
+      `?eventTypes=birthday` +
+      `&singleEvents=true` +
+      `&timeMin=${year}-01-01T00:00:00Z` +
+      `&timeMax=${year}-12-31T23:59:59Z`,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(`
-      <h2>🎉 Birthdays</h2>
-      <ul>${list}</ul>
-      <a href="/">Back</a>
-    `);
-    return;
+  // Deduplicate by name + month-day
+  const seen = new Set();
+  const birthdays = [];
+
+  for (const e of events.items || []) {
+    if (!e.start || !e.start.date) continue;
+
+    const [y, m, d] = e.start.date.split("-");
+    const key = `${e.summary}-${m}-${d}`;
+
+    if (!seen.has(key)) {
+      seen.add(key);
+      birthdays.push({
+        name: e.summary.replace("’s birthday", ""),
+        month: m,
+        day: d,
+      });
+    }
   }
 
+  // Sort by upcoming
+  birthdays.sort((a, b) => {
+    const aDate = new Date(year, a.month - 1, a.day);
+    const bDate = new Date(year, b.month - 1, b.day);
+    return aDate - bDate;
+  });
+
+  const list = birthdays
+    .map(b => `<li>🎂 ${b.day}-${b.month} — ${b.name}</li>`)
+    .join("");
+
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end(`
+    <h2>🎉 Birthdays</h2>
+    <ul>${list}</ul>
+    <a href="/">Back</a>
+  `);
+  return;
+}
   res.writeHead(404);
   res.end("Not found");
 });
