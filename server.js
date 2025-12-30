@@ -24,6 +24,12 @@ function fetchJSON(options, postData) {
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
+  // SERVE CSS
+if (parsedUrl.pathname === "/style.css") {
+  res.writeHead(200, { "Content-Type": "text/css" });
+  require("fs").createReadStream("public/style.css").pipe(res);
+  return;
+}
 
   // HOME
   if (parsedUrl.pathname === "/") {
@@ -90,6 +96,11 @@ const server = http.createServer(async (req, res) => {
 
   // BIRTHDAYS
   if (parsedUrl.pathname === "/birthdays") {
+      if (!accessToken) {
+    res.writeHead(302, { Location: "/" });
+    res.end();
+    return;
+  }
   const now = new Date();
   const year = now.getFullYear();
 
@@ -178,7 +189,7 @@ function renderLovableLayout(birthdays) {
             <div>
               <div class="font-medium">${escapeHtml(b.name)}</div>
               <div class="text-sm text-muted-foreground">
-                ${b.prettyDate}
+                ${b.day}-${b.month}
               </div>
             </div>
             <div>🎉</div>
