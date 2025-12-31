@@ -43,7 +43,11 @@ if (parsedUrl.pathname === "/") {
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body class="bg-background text-foreground">
-    ${renderLoginPage()}
+    ${
+      accessToken
+        ? `<script>window.location.href = "/birthdays";</script>`
+        : renderLoginPage()
+    }
   </body>
 </html>
 `);
