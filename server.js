@@ -182,14 +182,19 @@ function renderLovableLayout(birthdays) {
   return `
     <div class="min-h-screen bg-background">
       <header class="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
-        <div class="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <div class="rounded-xl bg-primary/10 p-2">🎂</div>
-          <div>
-            <h1 class="text-lg font-semibold">Birthdays</h1>
-            <p class="text-sm text-muted-foreground">
-              ${birthdays.length} total
-            </p>
+        <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="rounded-xl bg-primary/10 p-2">🎂</div>
+            <div>
+              <h1 class="text-lg font-semibold">Birthdays</h1>
+              <p class="text-sm text-muted-foreground">
+                ${birthdays.length} total
+              </p>
+            </div>
           </div>
+          <a href="/logout" class="text-sm text-muted-foreground hover:text-foreground transition">
+            Logout
+          </a>
         </div>
       </header>
 
