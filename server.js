@@ -7,8 +7,6 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const APP_URL = process.env.APP_URL;
 
-let accessToken = null;
-
 function fetchJSON(options, postData) {
   return new Promise((resolve, reject) => {
     const req = https.request(options, res => {
@@ -24,6 +22,7 @@ function fetchJSON(options, postData) {
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = url.parse(req.url, true);
+  const accessToken = getCookie(req, "accessToken");
   // SERVE CSS
 if (parsedUrl.pathname === "/style.css") {
   res.writeHead(200, { "Content-Type": "text/css" });
@@ -95,10 +94,13 @@ if (parsedUrl.pathname === "/") {
       })
     );
 
-    accessToken = tokenData.access_token;
-
-    res.writeHead(302, { Location: "/" });
-    res.end();
+    res.writeHead(302, {
+      Location: "/",
+      "Set-Cookie": `accessToken=${encodeURIComponent(
+        tokenData.access_token
+      )}; HttpOnly; Secure; SameSite=Lax; Path=/`,
+    });
+    res.end();    
     return;
   }
 
@@ -265,6 +267,26 @@ function renderLoginPage() {
 </div>
   `;
 }
+function getCookie(req, name) {
+  const cookies = req.headers.cookie;
+  if (!cookies) return null;
+
+  const match = cookies
+    .split(";")
+    .map(c => c.trim())
+    .find(c => c.startsWith(name + "="));
+
+  return match ? decodeURIComponent(match.split("=")[1]) : null;
+}
+if (parsedUrl.pathname === "/logout") {
+  res.writeHead(302, {
+    Location: "/",
+    "Set-Cookie": "accessToken=; HttpOnly; Secure; Max-Age=0; Path=/",
+  });
+  res.end();
+  return;
+}
+
   res.writeHead(404);
   res.end("Not found");
 });
