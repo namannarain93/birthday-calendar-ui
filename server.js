@@ -225,7 +225,7 @@ function renderLovableLayout(eventsList) {
             <div class="rounded-xl bg-primary/10 p-2">🎂</div>
             <div>
               <h1 class="text-lg font-semibold">Birthdays & Anniversaries</h1>
-              <p class="text-sm text-muted-foreground">
+              <p class="text-sm text-muted-foreground" id="event-count">
                 ${eventsList.length} total
               </p>
             </div>
@@ -236,9 +236,35 @@ function renderLovableLayout(eventsList) {
         </div>
       </header>
 
+      <div class="max-w-2xl mx-auto px-4 py-3 border-b border-border">
+        <div class="flex gap-2">
+          <button 
+            onclick="filterEvents('all')" 
+            class="filter-btn active px-4 py-2 rounded-lg text-sm font-medium transition bg-primary text-primary-foreground"
+            data-filter="all"
+          >
+            All
+          </button>
+          <button 
+            onclick="filterEvents('birthday')" 
+            class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-muted text-muted-foreground hover:bg-muted/80"
+            data-filter="birthday"
+          >
+            🎂 Birthdays
+          </button>
+          <button 
+            onclick="filterEvents('anniversary')" 
+            class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-muted text-muted-foreground hover:bg-muted/80"
+            data-filter="anniversary"
+          >
+            💍 Anniversaries
+          </button>
+        </div>
+      </div>
+
       <main class="max-w-2xl mx-auto px-4 py-6 space-y-3">
         ${eventsList.map(e => `
-          <div class="rounded-xl bg-card p-4 shadow-sm flex justify-between items-center">
+          <div class="event-item rounded-xl bg-card p-4 shadow-sm flex justify-between items-center" data-type="${e.type}">
             <div>
               <div class="font-medium">${escapeHtml(e.name)}</div>
               <div class="text-sm text-muted-foreground">
@@ -250,6 +276,39 @@ function renderLovableLayout(eventsList) {
         `).join("")}
       </main>
     </div>
+    <script>
+      function filterEvents(type) {
+        const eventItems = document.querySelectorAll('.event-item');
+        const buttons = document.querySelectorAll('.filter-btn');
+        const countElement = document.getElementById('event-count');
+        let visibleCount = 0;
+
+        // Update button states
+        buttons.forEach(btn => {
+          if (btn.getAttribute('data-filter') === type) {
+            btn.classList.remove('bg-muted', 'text-muted-foreground');
+            btn.classList.add('bg-primary', 'text-primary-foreground', 'active');
+          } else {
+            btn.classList.remove('bg-primary', 'text-primary-foreground', 'active');
+            btn.classList.add('bg-muted', 'text-muted-foreground');
+          }
+        });
+
+        // Filter events
+        eventItems.forEach(item => {
+          const itemType = item.getAttribute('data-type');
+          if (type === 'all' || itemType === type) {
+            item.style.display = 'flex';
+            visibleCount++;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+
+        // Update count
+        countElement.textContent = visibleCount + ' total';
+      }
+    </script>
   `;
 }
 function escapeHtml(str) {
