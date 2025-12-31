@@ -30,21 +30,25 @@ if (parsedUrl.pathname === "/style.css") {
   require("fs").createReadStream("public/style.css").pipe(res);
   return;
 }
-
-  // HOME
-  if (parsedUrl.pathname === "/") {
-    res.writeHead(200, { "Content-Type": "text/html" });
-    res.end(`
-      <h1>🎂 Birthday App</h1>
-
-      ${
-        accessToken
-          ? `<a href="/birthdays">View birthdays</a>`
-          : `<a href="/login"><button>Sign in with Google</button></a>`
-      }
-    `);
-    return;
-  }
+// HOME (Lovable sign-in)
+if (parsedUrl.pathname === "/") {
+  res.writeHead(200, { "Content-Type": "text/html" });
+  res.end(`
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="bg-background text-foreground">
+    ${renderLoginPage()}
+  </body>
+</html>
+`);
+  return;
+}
 
   // LOGIN
   if (parsedUrl.pathname === "/login") {
