@@ -215,7 +215,48 @@ function escapeHtml(str) {
     day: "numeric",
   });
 }
+function renderLoginPage() {
+  return `
+    <div class="min-h-screen bg-background flex flex-col">
+  <!-- Header -->
+  <header class="bg-card border-b border-border">
+    <div class="max-w-2xl mx-auto px-4 py-4">
+      <h1 class="text-xl font-semibold">Birthdays</h1>
+    </div>
+  </header>
 
+  <!-- Main -->
+  <main class="flex-1 flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-sm bg-card rounded-2xl p-6 shadow-sm space-y-6">
+      <div class="text-center space-y-2">
+        <div class="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+          🎂
+        </div>
+        <h2 class="text-lg font-semibold">Never forget a birthday</h2>
+        <p class="text-sm text-muted-foreground">
+          View and manage all your birthdays from Google Calendar
+        </p>
+      </div>
+
+      <!-- Sign in button -->
+      <a href="/login" class="block">
+        <button
+          class="w-full flex items-center justify-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-sm font-medium hover:bg-muted transition"
+        >
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.36 1.22 8.72 3.23l6.5-6.5C35.2 2.64 30.03 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.9 6.14C12.2 13.1 17.6 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.5 24.5c0-1.64-.15-3.22-.43-4.74H24v9h12.7c-.55 2.9-2.18 5.36-4.6 7.04l7.08 5.5c4.14-3.82 6.32-9.45 6.32-16.8z"/>
+            <path fill="#FBBC05" d="M10.46 28.36c-.5-1.5-.78-3.1-.78-4.86s.28-3.36.78-4.86l-7.9-6.14C.92 16.46 0 20.08 0 24s.92 7.54 2.56 10.5l7.9-6.14z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.92-2.14 15.9-5.8l-7.08-5.5c-1.96 1.32-4.46 2.1-8.82 2.1-6.4 0-11.8-3.6-13.54-8.86l-7.9 6.14C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          Sign in with Google
+        </button>
+      </a>
+    </div>
+  </main>
+</div>
+  `;
+}
   res.writeHead(404);
   res.end("Not found");
 });
