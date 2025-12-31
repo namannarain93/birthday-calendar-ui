@@ -114,7 +114,8 @@ if (parsedUrl.pathname === "/") {
   const now = new Date();
   const year = now.getFullYear();
 
-  const events = await fetchJSON({
+  // Fetch birthdays
+  const birthdayEvents = await fetchJSON({
     hostname: "www.googleapis.com",
     path:
       `/calendar/v3/calendars/primary/events` +
@@ -127,36 +128,69 @@ if (parsedUrl.pathname === "/") {
     },
   });
 
+  // Fetch regular events to look for anniversaries
+  const regularEvents = await fetchJSON({
+    hostname: "www.googleapis.com",
+    path:
+      `/calendar/v3/calendars/primary/events` +
+      `?singleEvents=true` +
+      `&timeMin=${year}-01-01T00:00:00Z` +
+      `&timeMax=${year}-12-31T23:59:59Z` +
+      `&maxResults=2500`,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  // Combine all events
+  const allEvents = [
+    ...(birthdayEvents.items || []),
+    ...(regularEvents.items || []).filter(e => 
+      e.summary && /anniversary|anniv/i.test(e.summary)
+    )
+  ];
+
   // Deduplicate by name + month-day
   const seen = new Set();
-  const birthdays = [];
+  const eventsList = [];
 
-  for (const e of events.items || []) {
+  for (const e of allEvents) {
     if (!e.start || !e.start.date) continue;
 
     const [y, m, d] = e.start.date.split("-");
-    const key = `${e.summary}-${m}-${d}`;
+    const summary = e.summary || "";
+    
+    // Detect if it's an anniversary or birthday
+    const isAnniversary = /anniversary|anniv/i.test(summary);
+    const type = isAnniversary ? "anniversary" : "birthday";
+    
+    // Clean the name
+    let name = summary;
+    if (isAnniversary) {
+      name = name.replace(/'s anniversary|'s anniversary| anniversary|anniv/i, "").trim();
+    } else {
+      name = name.replace(/'s birthday|'s birthday| birthday/i, "").trim();
+    }
+    
+    const key = `${name}-${m}-${d}-${type}`;
 
     if (!seen.has(key)) {
       seen.add(key);
-      birthdays.push({
-        name: e.summary.replace(/'s birthday|’s birthday| birthday/i, "").trim(),
+      eventsList.push({
+        name: name,
         month: m,
         day: d,
+        type: type,
       });
     }
   }
 
   // Sort by upcoming
-  birthdays.sort((a, b) => {
+  eventsList.sort((a, b) => {
     const aDate = new Date(year, a.month - 1, a.day);
     const bDate = new Date(year, b.month - 1, b.day);
     return aDate - bDate;
   });
-
-  const list = birthdays
-    .map(b => `<li>🎂 ${b.day}-${b.month} — ${b.name}</li>`)
-    .join("");
 
   res.writeHead(200, { "Content-Type": "text/html" });
     res.end(`
@@ -165,20 +199,24 @@ if (parsedUrl.pathname === "/") {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Birthdays</title>
+    <title>Birthdays & Anniversaries</title>
 
     <!-- Lovable CSS -->
     <link rel="stylesheet" href="/style.css" />
   </head>
 
   <body class="bg-background text-foreground">
-    ${renderLovableLayout(birthdays)}
+    ${renderLovableLayout(eventsList)}
   </body>
 </html>
 `);
 return;
 }
-function renderLovableLayout(birthdays) {
+function renderLovableLayout(eventsList) {
+  const getIcon = (type) => {
+    return type === "anniversary" ? "💍" : "🎂";
+  };
+  
   return `
     <div class="min-h-screen bg-background">
       <header class="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
@@ -186,9 +224,9 @@ function renderLovableLayout(birthdays) {
           <div class="flex items-center gap-3">
             <div class="rounded-xl bg-primary/10 p-2">🎂</div>
             <div>
-              <h1 class="text-lg font-semibold">Birthdays</h1>
+              <h1 class="text-lg font-semibold">Birthdays & Anniversaries</h1>
               <p class="text-sm text-muted-foreground">
-                ${birthdays.length} total
+                ${eventsList.length} total
               </p>
             </div>
           </div>
@@ -199,15 +237,15 @@ function renderLovableLayout(birthdays) {
       </header>
 
       <main class="max-w-2xl mx-auto px-4 py-6 space-y-3">
-        ${birthdays.map(b => `
+        ${eventsList.map(e => `
           <div class="rounded-xl bg-card p-4 shadow-sm flex justify-between items-center">
             <div>
-              <div class="font-medium">${escapeHtml(b.name)}</div>
+              <div class="font-medium">${escapeHtml(e.name)}</div>
               <div class="text-sm text-muted-foreground">
-                ${formatPrettyDate(b.day, b.month)}
+                ${formatPrettyDate(e.day, e.month)}
               </div>
             </div>
-            <div>🎉</div>
+            <div>${getIcon(e.type)}</div>
           </div>
         `).join("")}
       </main>
